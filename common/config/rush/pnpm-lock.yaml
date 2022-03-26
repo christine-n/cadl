@@ -7,6 +7,7 @@ dependencies:
   '@rush-temp/cadl-vscode': file:projects/cadl-vscode.tgz
   '@rush-temp/compiler': file:projects/compiler.tgz
   '@rush-temp/eslint-config-cadl': file:projects/eslint-config-cadl.tgz_prettier@2.5.1
+  '@rush-temp/lugha': file:projects/lugha.tgz
   '@rush-temp/openapi': file:projects/openapi.tgz
   '@rush-temp/openapi3': file:projects/openapi3.tgz
   '@rush-temp/playground': file:projects/playground.tgz
@@ -4270,6 +4271,21 @@ packages:
       integrity: sha512-djZZqlrkfB2H3h/gGEqfGgqZ8YUJ43e5yUDKW+9RnDGLLYXYV2KFr5rnyuEsdnrGfo70lg/NZ36G8pVt7xB1Dg==
       tarball: file:projects/eslint-config-cadl.tgz
     version: 0.0.0
+  file:projects/lugha.tgz:
+    dependencies:
+      '@types/mocha': 9.1.0
+      '@types/node': 14.0.27
+      c8: 7.11.0
+      eslint: 8.9.0
+      mocha: 9.2.1
+      rimraf: 3.0.2
+      typescript: 4.5.5
+    dev: false
+    name: '@rush-temp/lugha'
+    resolution:
+      integrity: sha512-s5d8nmNamwLL9Q7acAy2Ec6Wrx+r+EAI7F/TSXKc8wItK+g1Hjcqi4o/FAmGhhTA7pkSxHCeZ+DcAqkAhwaj6w==
+      tarball: file:projects/lugha.tgz
+    version: 0.0.0
   file:projects/openapi.tgz:
     dependencies:
       '@types/mocha': 9.1.0
@@ -4416,6 +4432,7 @@ specifiers:
   '@rush-temp/cadl-vscode': file:./projects/cadl-vscode.tgz
   '@rush-temp/compiler': file:./projects/compiler.tgz
   '@rush-temp/eslint-config-cadl': file:./projects/eslint-config-cadl.tgz
+  '@rush-temp/lugha': file:./projects/lugha.tgz
   '@rush-temp/openapi': file:./projects/openapi.tgz
   '@rush-temp/openapi3': file:./projects/openapi3.tgz
   '@rush-temp/playground': file:./projects/playground.tgz
