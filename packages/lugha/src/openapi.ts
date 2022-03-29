@@ -67,6 +67,69 @@ const {
 } = http;
 
 export async function $onEmit(p: Program, emitterOptions?: EmitOptionsFor<OpenAPILibrary>) {
+  await originalEmit(p, emitterOptions);
+  await lughaEmitter(p, emitterOptions);
+}
+
+async function lughaEmitter(program: Program, emitterOptions?: EmitOptionsFor<OpenAPILibrary>) {
+  const root: any = {
+    $Version: "4.0",
+  };
+
+  const serviceNs = getServiceNamespace(program);
+  if (serviceNs) {
+    // serviceNs.namespaces
+  }
+
+  serviceNs?.namespaces.forEach((namespaceType, namespaceName) => {
+    if (namespaceName === "Cadl") {
+      return;
+    }
+
+    const nsModels: { [key: string]: any } = {};
+    namespaceType.models.forEach((modelValue, modelName, context) => {
+      const model: any = {
+        $Kind: "EntityType",
+      };
+
+      modelValue.properties.forEach((propertyValue, propertyName) => {
+        const property: any = {};
+        let propertyType = propertyValue.type;
+        if (propertyType.kind === "Array") {
+          propertyType = propertyType.elementType;
+          property.$Collection = true;
+        }
+
+        if (isStringType(program, propertyType)) {
+          property.$Type = "Edm.String";
+        } else if (isNumericType(program, propertyType)) {
+          property.$Type = "Edm.Int32";
+        } else {
+          property.$Type = (propertyType as any).name;
+        }
+
+        if (propertyValue.optional) {
+          property.$Nullable = true;
+        }
+
+        model[propertyName] = property;
+      });
+
+      nsModels[modelName] = model;
+    });
+
+    root[namespaceName] = nsModels;
+  });
+
+  const childModelMap = mapChildModels(program);
+
+  root.zzTop = childModelMap;
+
+  const outputFile = resolvePath(program.compilerOptions.outputPath || "./", "metadata.json");
+  await program.host.writeFile(outputFile, prettierOutput(JSON.stringify(root, null, 2)));
+}
+
+async function originalEmit(p: Program, emitterOptions?: EmitOptionsFor<OpenAPILibrary>) {
   const options: OpenAPIEmitterOptions = {
     outputFile: p.compilerOptions.swaggerOutputFile || resolvePath("./openapi.json"),
   };

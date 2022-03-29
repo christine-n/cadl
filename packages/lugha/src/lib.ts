@@ -1,7 +1,7 @@
 import { createCadlLibrary, paramMessage } from "@cadl-lang/compiler";
 
 export const libDef = {
-  name: "@cadl-lang/openapi3",
+  name: "@cadl-lang/lugha",
   diagnostics: {
     "security-service-namespace": {
       severity: "error",
@@ -85,7 +85,7 @@ export const libDef = {
     },
   },
   emitter: {
-    names: ["openapi3"],
+    names: ["lugha"],
   },
 } as const;
 const lib = createCadlLibrary(libDef);

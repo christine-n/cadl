@@ -234,7 +234,9 @@ function compileInput(
     } else {
       if (printSuccess) {
         log(
-          `Compilation completed successfully, output files are in ${compilerOptions.outputPath}.`
+          `Compilation completed successfully, output files are in ${resolve(
+            compilerOptions.outputPath || ""
+          )}`
         );
       }
     }
