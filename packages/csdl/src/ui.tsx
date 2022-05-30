@@ -24,11 +24,11 @@ const ProgramContext = React.createContext<Program>({} as any);
 
 export function renderProgram(program: Program) {
   const sheet = new ServerStyleSheet();
-  const csdl = ReactDOMServer.renderToString(
+  const html = ReactDOMServer.renderToString(
     sheet.collectStyles(<CadlProgramViewer program={program} />)
   );
   const styleTags = sheet.getStyleTags();
-  return styleTags + "\n" + csdl;
+  return `<!DOCTYPE html><html lang="en"><link rel="stylesheet" href="style.css"><body>${styleTags}\n${html}</body></html>`;
 }
 
 export interface CadlProgramViewerProps {
@@ -370,8 +370,7 @@ const TypeDataKey = styled.div`
   color: #333;
   margin-right: 5px;
 `;
-const TypeDataValue = styled.div`
-`;
+const TypeDataValue = styled.div``;
 const TypeData: FunctionComponent<{ type: Type }> = ({ type }) => {
   const program = useContext(ProgramContext);
   const entries = [...program.stateMaps.entries()]
