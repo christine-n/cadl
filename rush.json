@@ -155,6 +155,12 @@
       "projectFolder": "packages/bundler",
       "reviewCategory": "production",
       "shouldPublish": false
+    },
+    {
+      "packageName": "@cadl-lang/csdl",
+      "projectFolder": "packages/csdl",
+      "reviewCategory": "production",
+      "shouldPublish": false
     }
   ]
 }
