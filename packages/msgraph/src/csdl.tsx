@@ -90,7 +90,7 @@ export const CadlProgramViewer: FunctionComponent<CadlProgramViewerProps> = ({ p
   return (
     <ProgramContext.Provider value={program}>
       {namespaces.map((namespace) => {
-        const namespaceString = program.checker!.getNamespaceString(namespace) || "Oyaa";
+        const namespaceString = program.checker!.getNamespaceString(namespace);
         return (
           <SchemaElement Namespace={namespaceString}>
             <Elements namespace={namespace} />
