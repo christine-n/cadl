@@ -157,8 +157,8 @@
       "shouldPublish": false
     },
     {
-      "packageName": "@cadl-lang/csdl",
-      "projectFolder": "packages/csdl",
+      "packageName": "@cadl-lang/msgraph",
+      "projectFolder": "packages/msgraph",
       "reviewCategory": "production",
       "shouldPublish": false
     }

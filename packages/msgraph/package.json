@@ -1,8 +1,8 @@
 {
-  "name": "@cadl-lang/csdl",
+  "name": "@cadl-lang/msgraph",
   "version": "0.1.0",
   "author": "Microsoft Corporation",
-  "description": "Cadl library for emitting a csdl representation of the service.",
+  "description": "Cadl library for emitting an msgraph workload csdl.",
   "homepage": "https://github.com/Azure/cadl",
   "readme": "https://github.com/Azure/cadl/blob/master/README.md",
   "license": "MIT",

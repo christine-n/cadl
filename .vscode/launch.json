@@ -83,13 +83,13 @@
     {
       "type": "pwa-node",
       "request": "launch",
-      "name": "Compile Scratch CSDL",
+      "name": "Compile Scratch MsGraph",
       "program": "${workspaceRoot}/packages/compiler/dist/core/cli.js",
       "args": [
         "compile",
         "../samples/scratch",
         "--output-path=../samples/scratch/output",
-        "--emit=@cadl-lang/csdl"
+        "--emit=@cadl-lang/msgraph"
       ],
       "smartStep": true,
       "sourceMaps": true,

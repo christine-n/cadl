@@ -1,4 +1,4 @@
-# Cadl Csdl emitter
+# Cadl MSGraph Csdl emitter
 
 ## See also
 
