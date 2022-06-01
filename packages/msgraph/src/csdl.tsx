@@ -64,6 +64,22 @@ const SchemaElement = (props: SchemaProps) =>
 
 //===================================================================================================
 
+function formatXml(xml: string, tab: string = "  ") {
+  let formatted = "";
+  let indent = "";
+  xml.split(/>\s*</).forEach(function (node) {
+    if (node.match(/^\/\w/)) {
+      indent = indent.substring(tab.length); // decrease indent by one 'tab'
+    }
+
+    formatted += indent + "<" + node + ">\r\n";
+    if (node.match(/^<?\w[^>]*[^\/]$/)) {
+      indent += tab; // increase indent
+    }
+  });
+
+  return formatted.substring(1, formatted.length - 3);
+}
 function expandNamespaces(namespace: NamespaceType): NamespaceType[] {
   return [namespace, ...[...namespace.namespaces.values()].flatMap(expandNamespaces)];
 }
@@ -72,12 +88,12 @@ const ProgramContext = React.createContext<Program>({} as any);
 
 export function renderCsdl(program: Program) {
   const csdl = ReactDOMServer.renderToStaticMarkup(<CadlProgramViewer program={program} />);
-  return `<?xml version="1.0" encoding="utf-8"?>
+  return formatXml(`<?xml version="1.0" encoding="utf-8"?>
   <edmx:Edmx Version="4.0" xmlns:ags="http://aggregator.microsoft.com/internal" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
     <edmx:DataServices>
     ${csdl}
     </edmx:DataServices>
-  </edmx:Edmx>`;
+  </edmx:Edmx>`);
 }
 
 export interface CadlProgramViewerProps {
