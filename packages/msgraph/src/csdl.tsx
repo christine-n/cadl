@@ -1,4 +1,5 @@
 import {
+  EnumMemberType,
   EnumType,
   InterfaceType,
   ModelType,
@@ -12,6 +13,7 @@ import {
 import React, { FunctionComponent, ReactElement, useContext } from "react";
 import ReactDOMServer from "react-dom/server";
 import { Item, Literal, styled } from "./common.js";
+import { isContains, isId, isOpenModel, isReferences } from "./decorators.js";
 import { inspect } from "./inspect.js";
 
 //===================================================================================================
@@ -31,9 +33,17 @@ const EnumTypeElement = (props: EnumTypeProps) => React.createElement("EnumType"
 interface PropertyProps {
   Name: string;
   Type: string;
-  Nullable?: boolean;
+  Nullable?: string;
 }
 const PropertyElement = (props: PropertyProps) => React.createElement("Property", props);
+
+interface NavigationPropertyProps {
+  Name: string;
+  Type: string;
+  ContainsTarget?: string;
+}
+const NavigationPropertyElement = (props: NavigationPropertyProps) =>
+  React.createElement("NavigationProperty", props);
 
 interface ComplexTypeProps {
   Name: string;
@@ -41,6 +51,10 @@ interface ComplexTypeProps {
   BaseType?: string;
 }
 const ComplexTypeElement = (props: ComplexTypeProps) => React.createElement("ComplexType", props);
+
+const PropertyRefElement = (props: { Name: string }) => React.createElement("PropertyRef", props);
+
+const KeyElement = (props: { children: any }) => React.createElement("Key", props);
 
 interface EntityTypeProps {
   Name: string;
@@ -100,20 +114,153 @@ export interface CadlProgramViewerProps {
   program: Program;
 }
 
+function hasChildren(type: Type) {
+  switch (type.kind) {
+    case "Namespace":
+      return type.enums.size || type.models.size || type.interfaces.size || type.operations.size;
+    default:
+      return true;
+  }
+}
+
 export const CadlProgramViewer: FunctionComponent<CadlProgramViewerProps> = ({ program }) => {
   const root = program.checker!.getGlobalNamespaceType();
-  const namespaces = expandNamespaces(root).filter((ns) => ns.name && ns.name !== "Cadl");
+  const excludedNamespaces = ["Cadl"];
+  const namespaces = expandNamespaces(root)
+    .map((namespace) => ({
+      name: program.checker!.getNamespaceString(namespace),
+      namespace,
+    }))
+    .filter(
+      (ns) =>
+        ns.name &&
+        hasChildren(ns.namespace) &&
+        excludedNamespaces.every((exclude) => !ns.name.startsWith(exclude))
+    );
   return (
     <ProgramContext.Provider value={program}>
-      {namespaces.map((namespace) => {
-        const namespaceString = program.checker!.getNamespaceString(namespace);
+      {namespaces.map((ns) => {
         return (
-          <SchemaElement Namespace={namespaceString}>
-            <Elements namespace={namespace} />
+          <SchemaElement Namespace={ns.name}>
+            <Elements namespace={ns.namespace} />
           </SchemaElement>
         );
       })}
     </ProgramContext.Provider>
+  );
+};
+
+const Elements: FunctionComponent<{ namespace: NamespaceType }> = ({ namespace }) => {
+  return (
+    <>
+      <EnumTypeList enums={namespace.enums} />
+      <ModelList models={namespace.models} />
+      <ItemList items={namespace.interfaces} render={(x) => <Interface type={x} />} />
+      <ItemList items={namespace.operations} render={(x) => <Operation type={x} />} />
+      <ItemList items={namespace.unions} render={(x) => <Union type={x} />} />
+    </>
+  );
+};
+
+const EnumTypeList: FunctionComponent<{ enums: Map<string, EnumType> }> = (props) => (
+  <ItemList
+    items={props.enums}
+    render={(type) => (
+      <EnumTypeElement Name={type.name}>
+        <EnumMemberList members={type.members} />
+      </EnumTypeElement>
+    )}
+  />
+);
+
+const EnumMemberList: FunctionComponent<{ members: EnumMemberType[] }> = (props) => (
+  <ItemList
+    items={props.members}
+    render={(member) => <EnumMemberElement Name={member.name} Value={member.value} />}
+  />
+);
+
+const ModelList: FunctionComponent<{ models: Map<string, ModelType> }> = (props) => {
+  return (
+    <ItemList
+      items={props.models}
+      render={(model) => {
+        const program = useContext(ProgramContext);
+        const idProp = [...model.properties.entries()].find(([k, v]) => isId(program, v));
+        const isOpen = isOpenModel(program, model);
+        return (
+          <EntityTypeElement
+            Name={model.name}
+            BaseType={model.baseModel?.name}
+            {...(isOpen ? { OpenType: "true" } : {})}
+          >
+            {idProp && (
+              <KeyElement>
+                <PropertyRefElement Name={idProp[1].name} />
+              </KeyElement>
+            )}
+            <PropertyList properties={model.properties} />
+          </EntityTypeElement>
+        );
+      }}
+    />
+  );
+};
+
+const PropertyList: FunctionComponent<{ properties: Map<string, ModelTypeProperty> }> = (props) => {
+  return (
+    <ItemList
+      items={props.properties}
+      render={(property) => {
+        const program = useContext(ProgramContext);
+        const isNullable = property.optional;
+        const isContained = isContains(program, property);
+        const isReferenced = isReferences(program, property);
+        const isNavigation = isContained || isReferenced;
+
+        if (isNavigation) {
+          return (
+            <NavigationPropertyElement
+              Name={property.name}
+              Type={getIdForType(program, property.type)}
+              {...(isContained ? { ContainsTarget: "true" } : {})}
+            />
+          );
+        }
+
+        return (
+          <PropertyElement
+            Name={property.name}
+            Type={getNameForType(property.type)}
+            {...(isNullable ? {} : { Nullable: "false" })}
+          />
+        );
+      }}
+    />
+  );
+};
+
+interface ItemListProps<T> {
+  items: Map<string, T> | T[];
+  render: (t: T) => ReactElement<any, any> | null;
+}
+
+const ItemList = <T extends object>(props: ItemListProps<T>) => {
+  if (Array.isArray(props.items)) {
+    if (props.items.length === 0) {
+      return <></>;
+    }
+  } else {
+    if (props.items.size === 0) {
+      return <></>;
+    }
+  }
+  return (
+    <>
+      {[...props.items.entries()].map(([k, v]) => (
+        <>{props.render(v)}</>
+      ))}
+    </>
   );
 };
 
@@ -157,42 +304,6 @@ export const TypeUI: FunctionComponent<TypeUIProps> = (props) => {
       </div>
       <>{properties}</>
     </div>
-  );
-};
-
-export interface ItemListProps<T> {
-  items: Map<string, T> | T[];
-  render: (t: T) => ReactElement<any, any> | null;
-}
-
-export const ItemList = <T extends object>(props: ItemListProps<T>) => {
-  if (Array.isArray(props.items)) {
-    if (props.items.length === 0) {
-      return <></>;
-    }
-  } else {
-    if (props.items.size === 0) {
-      return <></>;
-    }
-  }
-  return (
-    <>
-      {[...props.items.entries()].map(([k, v]) => (
-        <>{props.render(v)}</>
-      ))}
-    </>
-  );
-};
-
-const Elements: FunctionComponent<{ namespace: NamespaceType }> = ({ namespace }) => {
-  return (
-    <>
-      <ItemList items={namespace.enums} render={(x) => <Enum type={x} />} />
-      <ItemList items={namespace.models} render={(x) => <Model type={x} />} />
-      <ItemList items={namespace.interfaces} render={(x) => <Interface type={x} />} />
-      <ItemList items={namespace.operations} render={(x) => <Operation type={x} />} />
-      <ItemList items={namespace.unions} render={(x) => <Union type={x} />} />
-    </>
   );
 };
 
@@ -242,31 +353,8 @@ export const Model: FunctionComponent<{ type: ModelType }> = ({ type }) => {
   );
 };
 
-function getTypeName(type: Type): string {
-  switch (type.kind) {
-    case "Array":
-      return `Collection(${getTypeName(type.elementType)})`;
-    case "Union":
-      return type.options.map((x, i) => getTypeName(x)).join(" | ");
-    case "TemplateParameter":
-      return type.node.id.sv;
-    case "String":
-    case "Number":
-    case "Boolean":
-      return `${type.value}`;
-    case "Namespace":
-    case "Operation":
-    case "Interface":
-    case "Enum":
-    case "Model":
-      return type.name;
-    default:
-      return type.kind;
-  }
-}
-
 const ModelProperty: FunctionComponent<{ property: ModelTypeProperty }> = ({ property }) => {
-  return <PropertyElement Name={property.name} Type={getTypeName(property.type)} />;
+  return <PropertyElement Name={property.name} Type={getNameForType(property.type)} />;
 };
 
 export const Enum: FunctionComponent<{ type: EnumType }> = ({ type }) => {
@@ -306,8 +394,79 @@ const UnionOptions: FunctionComponent<{ type: UnionType }> = ({ type }) => {
   );
 };
 
-function getIdForType(program: Program, type: Type) {
+function getNameForType(type: Type): string {
   switch (type.kind) {
+    case "Array":
+      return `Collection(${getNameForType(type.elementType)})`;
+    case "Union":
+      return type.options.map((x, i) => getNameForType(x)).join(" | ");
+    case "TemplateParameter":
+      return type.node.id.sv;
+    case "String":
+    case "Number":
+    case "Boolean":
+      return `${type.value}`;
+    case "Namespace":
+    case "Operation":
+    case "Interface":
+    case "Enum":
+      return type.name;
+    case "Model":
+      return getNameForModelType(type);
+    default:
+      return type.kind;
+  }
+}
+
+function getNameForModelType(type: ModelType) {
+  switch (type.name) {
+    case "string":
+      return "Edm.String";
+    case "bytes":
+      return "Collection(Edm.Byte)";
+    case "int8":
+      return "Edm.Byte";
+    case "int16":
+      return "Edm.Int16";
+    case "int32":
+      return "Edm.Int32";
+    case "int64":
+      return "Edm.Int64";
+    case "float32":
+      return "Edm.Single";
+    case "float64":
+      return "Edm.Double";
+    case "plainDate":
+      return "Edm.Date";
+    case "plainTime":
+      return "Edm.TimeOfDay";
+    case "zonedDateTime":
+      return "Edm.DateTimeOffset";
+    case "duration":
+      return "Edm.Duration";
+    case "boolean":
+      return "Edm.Boolean";
+    // case "uint8":
+    //   return "Edm.uint8";
+    // case "uint16":
+    //   return "Edm.uint16";
+    // case "uint32":
+    //   return "Edm.uint32";
+    // case "uint64":
+    //   return "Edm.uint64";
+    // case "safeint":
+    //   return "Edm.safeint";
+    // case "null":
+    //   return "Edm.null";
+    default:
+      return type.name;
+  }
+}
+
+function getIdForType(program: Program, type: Type): string {
+  switch (type.kind) {
+    case "Array":
+      return `Collection(${getIdForType(program, type.elementType)})`;
     case "Namespace":
       return program.checker!.getNamespaceString(type);
     case "Model":
@@ -316,8 +475,12 @@ function getIdForType(program: Program, type: Type) {
     case "Operation":
     case "Interface":
       return `${program.checker!.getNamespaceString(type.namespace)}.${type.name}`;
+    case "String":
+    case "Number":
+    case "Boolean":
+      return `${type.value}`;
     default:
-      return undefined;
+      return type.kind;
   }
 }
 

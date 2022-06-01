@@ -30,11 +30,11 @@ export function $id(context: DecoratorContext, entity: Type, altName?: string): 
   context.program.stateMap(idKey).set(entity, altName || entity.name);
 }
 
-export function isKey(program: Program, property: ModelTypeProperty) {
+export function isId(program: Program, property: ModelTypeProperty) {
   return program.stateMap(idKey).has(property);
 }
 
-export function getKeyName(program: Program, property: ModelTypeProperty): string {
+export function getIdName(program: Program, property: ModelTypeProperty): string {
   return program.stateMap(idKey).get(property);
 }
 
