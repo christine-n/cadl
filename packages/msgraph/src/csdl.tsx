@@ -155,9 +155,9 @@ const Elements: FunctionComponent<{ namespace: NamespaceType }> = ({ namespace }
     <>
       <EnumTypeList enums={namespace.enums} />
       <ModelList models={namespace.models} />
-      <ItemList items={namespace.interfaces} render={(x) => <Interface type={x} />} />
+      {/* <ItemList items={namespace.interfaces} render={(x) => <Interface type={x} />} />
       <ItemList items={namespace.operations} render={(x) => <Operation type={x} />} />
-      <ItemList items={namespace.unions} render={(x) => <Union type={x} />} />
+      <ItemList items={namespace.unions} render={(x) => <Union type={x} />} /> */}
     </>
   );
 };
