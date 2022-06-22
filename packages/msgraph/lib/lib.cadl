@@ -1,0 +1,9 @@
+import "../dist/src/index.js";
+
+namespace Cadl.MsGraph;
+
+@intrinsic("date")
+model date {}
+
+@intrinsic("stream")
+model stream {}
