@@ -197,11 +197,9 @@ const ModelList: FunctionComponent<{ models: Map<string, ModelType> }> = (props)
               BaseType={model.baseModel?.name}
               {...(isOpen ? { OpenType: "true" } : {})}
             >
-              {idProp && (
-                <KeyElement>
-                  <PropertyRefElement Name={idProp[1].name} />
-                </KeyElement>
-              )}
+              <KeyElement>
+                <PropertyRefElement Name={idProp[1].name} />
+              </KeyElement>
               <PropertyList properties={model.properties} />
             </EntityTypeElement>
           );
