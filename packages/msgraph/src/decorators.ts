@@ -4,39 +4,8 @@ import {
   ModelTypeProperty,
   Program,
   Type,
-  validateDecoratorParamType,
   validateDecoratorTarget,
 } from "@cadl-lang/compiler";
-
-const idKey = Symbol("id");
-/**
- * `@id` - mark a model property as the key to identify instances of that type
- *
- * The optional first argument accepts an alternate key name which may be used by emitters.
- * Otherwise, the name of the target property will be used.
- *
- * `@id` can only be applied to model properties.
- */
-export function $id(context: DecoratorContext, entity: Type, altName?: string): void {
-  if (!validateDecoratorTarget(context, entity, "@id", "ModelProperty")) {
-    return;
-  }
-
-  if (altName && !validateDecoratorParamType(context.program, entity, altName, "String")) {
-    return;
-  }
-
-  // Register the id property
-  context.program.stateMap(idKey).set(entity, altName || entity.name);
-}
-
-export function isId(program: Program, property: ModelTypeProperty) {
-  return program.stateMap(idKey).has(property);
-}
-
-export function getIdName(program: Program, property: ModelTypeProperty): string {
-  return program.stateMap(idKey).get(property);
-}
 
 const openModelKey = Symbol("openModel");
 /**

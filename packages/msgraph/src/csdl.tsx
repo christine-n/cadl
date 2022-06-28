@@ -2,6 +2,7 @@ import {
   EnumMemberType,
   EnumType,
   InterfaceType,
+  isKey,
   ModelType,
   ModelTypeProperty,
   NamespaceType,
@@ -10,10 +11,12 @@ import {
   Type,
   UnionType,
 } from "@cadl-lang/compiler";
+import { getRoutePath } from "@cadl-lang/rest";
+
 import React, { FunctionComponent, ReactElement, useContext } from "react";
 import ReactDOMServer from "react-dom/server";
 import { Item, Literal, styled } from "./common.js";
-import { isContains, isId, isOpenModel, isReferences } from "./decorators.js";
+import { isContains, isOpenModel, isReferences } from "./decorators.js";
 import { inspect } from "./inspect.js";
 
 //===================================================================================================
@@ -64,6 +67,13 @@ interface EntityTypeProps {
   children: any;
 }
 const EntityTypeElement = (props: EntityTypeProps) => React.createElement("EntityType", props);
+
+const SingletonElement = (props: { Name: string; Type: string; children: any }) =>
+  React.createElement("Singleton", props);
+const EntitySetElement = (props: { Name: string; EntityType: string; children: any }) =>
+  React.createElement("EntitySet", props);
+const EntityContainerElement = (props: { Name: string; children: any }) =>
+  React.createElement("EntityContainer", props);
 
 interface SchemaProps {
   Namespace: string;
@@ -164,6 +174,26 @@ const Elements: FunctionComponent<{ namespace: NamespaceType }> = ({ namespace }
   );
 };
 
+const EntityContainer: FunctionComponent<{ interfaces: Map<string, InterfaceType> }> = (props) => {
+  if (!props.interfaces.size) {
+    return <></>;
+  }
+
+  const program = useContext(ProgramContext);
+  const navigationSources = [...props.interfaces.entries()].map(([k, v]) => ({
+    path: getRoutePath(program, v)?.path,
+    type: v,
+  }));
+
+  const entitySets = navigationSources
+    .filter((nav) => nav.path && nav.path.lastIndexOf("/") > 0 && nav.type.operations.get("Get"))
+    .map((nav) => ({ path: nav.path, returnType: nav.type.operations.get("Get")?.returnType }));
+
+  return (
+    <EntityContainerElement Name="container">{"<!-- Some stuff here -->"}</EntityContainerElement>
+  );
+};
+
 const EnumTypeList: FunctionComponent<{ enums: Map<string, EnumType> }> = (props) => (
   <ItemList
     items={props.enums}
@@ -188,9 +218,10 @@ const ModelList: FunctionComponent<{ models: Map<string, ModelType> }> = (props)
       items={props.models}
       render={(model) => {
         const program = useContext(ProgramContext);
-        const idProp = [...model.properties.entries()].find(([k, v]) => isId(program, v));
+        const keyProp = [...model.properties.entries()].find(([k, v]) => isKey(program, v));
         const isOpen = isOpenModel(program, model);
-        if (idProp) {
+
+        if (keyProp) {
           return (
             <EntityTypeElement
               Name={model.name}
@@ -198,20 +229,22 @@ const ModelList: FunctionComponent<{ models: Map<string, ModelType> }> = (props)
               {...(isOpen ? { OpenType: "true" } : {})}
             >
               <KeyElement>
-                <PropertyRefElement Name={idProp[1].name} />
+                <PropertyRefElement Name={keyProp[1].name} />
               </KeyElement>
               <PropertyList properties={model.properties} />
             </EntityTypeElement>
           );
-        } else {
-          return (
-            <ComplexTypeElement
-              Name={model.name}
-            >
-              <PropertyList properties={model.properties} />
-            </ComplexTypeElement>
-          );
         }
+
+        return (
+          <ComplexTypeElement
+            Name={model.name}
+            BaseType={model.baseModel?.name}
+            {...(isOpen ? { OpenType: "true" } : {})}
+          >
+            <PropertyList properties={model.properties} />
+          </ComplexTypeElement>
+        );
       }}
     />
   );
@@ -456,6 +489,8 @@ function getNameForModelType(type: ModelType) {
       return "Edm.Duration";
     case "boolean":
       return "Edm.Boolean";
+    case "stream":
+      return "Edm.Stream";
     // case "uint8":
     //   return "Edm.uint8";
     // case "uint16":
